@@ -19,6 +19,7 @@ use App\Models\Santri;
 use App\Models\Semester;
 use App\Models\StaffAdmin;
 use App\Models\TahunAjaran;
+use App\Models\TahunBerjalan;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Components\Select;
@@ -99,7 +100,7 @@ class SoalImtihanResource extends Resource
 
                 Select::make('qism_detail_id')
                     ->label('Qism Detail')
-                    ->options(fn (Get $get): Collection => QismDetail::query()
+                    ->options(fn(Get $get): Collection => QismDetail::query()
                         ->where('qism_id', $get('qism_id'))
                         ->pluck('abbr_qism_detail', 'id'))
                     ->native(false),
@@ -286,7 +287,7 @@ class SoalImtihanResource extends Resource
 
                 TextColumn::make('soal_dari_ustadz')
                     ->label('Draft Soal')
-                    ->formatStateUsing(fn (string $state): string => __("Lihat"))
+                    ->formatStateUsing(fn(string $state): string => __("Lihat"))
                     // ->limit(1)
                     ->icon('heroicon-s-eye')
                     ->iconColor('success')
@@ -304,7 +305,7 @@ class SoalImtihanResource extends Resource
 
                 TextColumn::make('soal_siap_print')
                     ->label('Soal')
-                    ->formatStateUsing(fn (string $state): string => __("Lihat"))
+                    ->formatStateUsing(fn(string $state): string => __("Lihat"))
                     // ->limit(1)
                     ->icon('heroicon-s-eye')
                     ->iconColor('success')
@@ -361,18 +362,37 @@ class SoalImtihanResource extends Resource
                     ->modalDescription('Setelah klik tombol "Simpan", maka jumlah print akan ter-reset sesuai jumlah santri per kelas')
                     ->modalSubmitActionLabel('Simpan')
                     ->action(function (Model $record) {
-                        $santri = KelasSantri::where('qism_detail_id', $record->qism_detail_id)
-                            ->where('tahun_ajaran_id', $record->tahun_ajaran_id)
-                            ->where('semester_id', $record->semester_id)
-                            ->where('kelas_id', $record->kelas_id)
-                            ->count();
 
-                        $data['jumlah_print'] = $santri;
-                        $record->update($data);
+                        if ($record->kelas_internal === null) {
+                            $santri = KelasSantri::whereHas('statussantri', function ($query) {
+                                $query->where('status', 'Aktif');
+                            })
+                                ->where('qism_detail_id', $record->qism_detail_id)
+                                ->where('tahun_berjalan_id', $record->tahun_berjalan_id)
+                                ->where('kelas_id', $record->kelas_id)
+                                ->count();
 
-                        return $record;
 
-                        // dd($santri);
+                            $data['jumlah_print'] = $santri;
+                            $record->update($data);
+
+                            return $record;
+                        } elseif ($record->kelas_internal !== null) {
+
+                            $santri = KelasSantri::whereHas('statussantri', function ($query) {
+                                $query->where('status', 'Aktif');
+                            })
+                                ->where('qism_detail_id', $record->qism_detail_id)
+                                ->where('tahun_berjalan_id', $record->tahun_berjalan_id)
+                                ->where('kelas_internal', $record->kelas_internal)
+                                ->count();
+
+
+                            $data['jumlah_print'] = $santri;
+                            $record->update($data);
+
+                            return $record;
+                        }
                     }),
 
                 // Tables\Actions\ViewAction::make(),
@@ -406,6 +426,8 @@ class SoalImtihanResource extends Resource
 
         // return parent::getEloquentQuery()->where('qism_id', Auth::user()->mudirqism)->orWhere('');
 
-        return parent::getEloquentQuery()->where('is_soal', 1);
+        $tahunberjalan = TahunBerjalan::where('is_active', 1)->first();
+
+        return parent::getEloquentQuery()->where('is_soal', 1)->where('tahun_berjalan_id', $tahunberjalan->id);
     }
 }

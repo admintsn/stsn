@@ -6,6 +6,7 @@ use App\Filament\Tsn\Resources\Imtihan\NilaiHafalanResource\Pages;
 use App\Filament\Tsn\Resources\Imtihan\NilaiHafalanResource\RelationManagers;
 use App\Models\Nilai;
 use App\Models\NilaiHafalan;
+use App\Models\TahunBerjalan;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -105,7 +106,7 @@ class NilaiHafalanResource extends Resource
 
                 TextColumn::make('file_nilai')
                     ->label('Link')
-                    ->formatStateUsing(fn (string $state): string => __("Input"))
+                    ->formatStateUsing(fn(string $state): string => __("Input"))
                     ->icon('heroicon-s-pencil-square')
                     ->iconColor('success')
                     // ->circular()
@@ -162,12 +163,12 @@ class NilaiHafalanResource extends Resource
 
                 Filter::make('is_nilai_selesai')
                     ->label('Nilai Selesai')
-                    ->query(fn (Builder $query): Builder => $query->where('is_nilai_selesai', 1))
+                    ->query(fn(Builder $query): Builder => $query->where('is_nilai_selesai', 1))
                     ->hidden(auth()->user()->id !== 1 || auth()->user()->id !== 2),
 
                 Filter::make('Nilai Belum Selesai')
                     ->label('Nilai Belum Selesai')
-                    ->query(fn (Builder $query): Builder => $query->where('is_nilai_selesai', 0))
+                    ->query(fn(Builder $query): Builder => $query->where('is_nilai_selesai', 0))
                     ->hidden(auth()->user()->id !== 1 || auth()->user()->id !== 2),
 
             ], layout: FiltersLayout::AboveContent)
@@ -200,14 +201,15 @@ class NilaiHafalanResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
+        $tahunberjalan = TahunBerjalan::where('is_active', 1)->first();
 
         if (Auth::user()->id === 1 or Auth::user()->id === 2) {
-            return parent::getEloquentQuery()->where('jenis_soal_id', 1)->where('is_nilai', 1);
+            return parent::getEloquentQuery()->where('jenis_soal_id', 1)->where('is_nilai', 1)->where('tahun_berjalan_id', $tahunberjalan->id);
         } else {
 
             return parent::getEloquentQuery()->whereHas('pengajar', function ($query) {
                 $query->where('user_id', Auth::user()->id);
-            })->where('jenis_soal_id', 1)->where('is_nilai', 1);
+            })->where('jenis_soal_id', 1)->where('is_nilai', 1)->where('tahun_berjalan_id', $tahunberjalan->id);
         }
     }
 }

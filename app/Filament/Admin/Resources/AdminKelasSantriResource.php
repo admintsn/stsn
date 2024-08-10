@@ -8,6 +8,12 @@ use App\Models\AdminKelasSantri;
 use App\Models\KelasSantri;
 use App\Models\Santri;
 use App\Models\Kelas;
+use App\Models\Qism;
+use App\Models\QismDetail;
+use App\Models\QismDetailHasKelas;
+use App\Models\Semester;
+use App\Models\TahunAjaran;
+use App\Models\TahunBerjalan;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -16,6 +22,8 @@ use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\TextInputColumn;
 use Filament\Tables\Columns\SelectColumn;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -56,43 +64,88 @@ class AdminKelasSantriResource extends Resource
             ->recordUrl(null)
             ->columns([
 
-                 TextColumn::make('walisantri.ws_emis4')
-                    ->label('WS Lengkap')
+                TextColumn::make('santri_id')
+                    ->label('Santri ID')
+                    ->searchable(isIndividual: true)
+                    ->toggleable()
+                    ->toggledHiddenByDefault(true)
+                    ->sortable(),
+
+                TextColumn::make('santri.nism')
+                    ->label('Santri-NISM')
+                    ->searchable(isIndividual: true)
+                    ->extraAttributes([
+                        'style' => 'width:150px'
+                    ])
+                    ->sortable(),
+
+                SelectColumn::make('qism_detail_id')
+                    ->label('Qism Detail')
+                    ->options(QismDetail::all()->pluck('abbr_qism_detail', 'id'))
+                    ->searchable(isIndividual: true)
+                    ->sortable()
+                    ->extraAttributes([
+                        'style' => 'min-width:150px'
+                    ]),
+
+                SelectColumn::make('kelas_id')
+                    ->label('Kelas')
+                    ->options(Kelas::all()->pluck('kelas', 'id'))
+                    ->searchable(isIndividual: true)
+                    ->sortable()
+                    ->extraAttributes([
+                        'style' => 'min-width:150px'
+                    ]),
+
+                TextInputColumn::make('kelas_internal')
+                    ->label('Kelas Internal')
+                    ->searchable(isIndividual: true)
+                    ->toggleable()
+                    // ->toggledHiddenByDefault(true)
+                    ->extraAttributes([
+                        'style' => 'width:150px'
+                    ])
+                    ->sortable(),
+
+                TextColumn::make('santri.nama_lengkap')
+                    ->label('Santri')
                     ->searchable(isIndividual: true)
                     ->sortable(),
 
-                    TextColumn::make('santri.s_emis4')
-                    ->label('S Lengkap')
-                    ->searchable(isIndividual: true)
-                    ->sortable(),
-
-                    TextColumn::make('walisantri.tanggal_datang')
-                    ->label('Kedatangan')
-                    ->date()
+                TextColumn::make('walisantri.ak_nama_lengkap')
+                    ->label('Nama Walisantri')
                     ->searchable(isIndividual: true)
                     ->sortable(),
 
                 TextColumn::make('walisantri.user.id')
                     ->label('User ID')
                     ->searchable(isIndividual: true)
+                    ->toggleable()
+                    ->toggledHiddenByDefault(true)
                     ->sortable(),
 
-                    TextInputColumn::make('walisantri.user.username')
+                TextInputColumn::make('walisantri.user.username')
                     ->label('Username')
                     ->searchable(isIndividual: true)
+                    ->toggleable()
+                    ->toggledHiddenByDefault(true)
                     ->extraAttributes([
                         'style' => 'width:200px'
                     ])
                     ->sortable(),
-                    
-                    TextColumn::make('user.tsnunique')
+
+                TextColumn::make('user.tsnunique')
                     ->label('tsnunique')
                     ->searchable(isIndividual: true)
+                    ->toggleable()
+                    ->toggledHiddenByDefault(true)
                     ->sortable(),
-                    
-                    TextColumn::make('walisantri.ak_nama_kunyah')
+
+                TextColumn::make('walisantri.ak_nama_kunyah')
                     ->label('Nama Hijroh')
                     ->searchable(isIndividual: true)
+                    ->toggleable()
+                    ->toggledHiddenByDefault(true)
                     ->sortable(),
 
                 TextInputColumn::make('kartu_keluarga')
@@ -102,75 +155,84 @@ class AdminKelasSantriResource extends Resource
                         'style' => 'width:200px'
                     ])
                     ->sortable(),
-                    
-                    TextInputColumn::make('tahun_berjalan_id')
-                    ->label('KelasSantri-Tahun Berjalan')
+
+                SelectColumn::make('tahun_berjalan_id')
+                    ->label('Tahun Berjalan')
+                    ->options(TahunBerjalan::all()->pluck('tb', 'id'))
                     ->searchable(isIndividual: true)
-                    ->extraAttributes([
-                        'style' => 'width:200px'
-                    ])
-                    ->sortable(),
-                    
-                    SelectColumn::make('kelas_id')
-                    ->label('Kelas')
-                    ->options(Kelas::all()->pluck('kelas', 'id'))
                     ->sortable()
                     ->extraAttributes([
                         'style' => 'min-width:200px'
                     ]),
 
-                    TextColumn::make('walisantri_id')
+                SelectColumn::make('tahun_ajaran_id')
+                    ->label('Tahun Ajaran')
+                    ->options(TahunAjaran::all()->pluck('abbr_ta', 'id'))
+                    ->searchable(isIndividual: true)
+                    ->sortable()
+                    ->extraAttributes([
+                        'style' => 'min-width:200px'
+                    ]),
+
+                SelectColumn::make('semester_id')
+                    ->label('Semester')
+                    ->options(Semester::all()->pluck('abbr_semester', 'id'))
+                    ->searchable(isIndividual: true)
+                    ->sortable()
+                    ->extraAttributes([
+                        'style' => 'min-width:200px'
+                    ]),
+
+                SelectColumn::make('qism_id')
+                    ->label('Qism')
+                    ->options(Qism::all()->pluck('abbr_qism', 'id'))
+                    ->searchable(isIndividual: true)
+                    ->sortable()
+                    ->extraAttributes([
+                        'style' => 'min-width:200px'
+                    ]),
+
+
+
+                TextColumn::make('walisantri_id')
                     ->label('Walisantri ID')
                     ->searchable(isIndividual: true)
+                    ->toggleable()
+                    ->toggledHiddenByDefault(true)
                     ->sortable(),
-                    
-                    TextInputColumn::make('walisantri.ak_no_kk')
+
+                TextInputColumn::make('walisantri.ak_no_kk')
                     ->label('Walisantri-KK')
                     ->searchable(isIndividual: true)
+                    ->toggleable()
+                    ->toggledHiddenByDefault(true)
                     ->extraAttributes([
                         'style' => 'width:200px'
                     ])
-                    ->sortable(),
-
-
-                TextColumn::make('walisantri.ak_nama_lengkap')
-                    ->label('Walisantri')
-                    ->searchable(isIndividual: true)
-                    ->sortable(),
-
-
-                TextColumn::make('santri_id')
-                    ->label('Santri ID')
-                    ->searchable(isIndividual: true)
-                    ->sortable(),
-                    
-                    TextColumn::make('santri.nism')
-                    ->label('Santri-NISM')
-                    ->searchable(isIndividual: true)
-                    ->extraAttributes([
-                        'style' => 'width:200px'
-                    ])
-                    ->sortable(),
-                    
-                    TextInputColumn::make('santri.kartu_keluarga')
-                    ->label('Santri-KK')
-                    ->searchable(isIndividual: true)
-                    ->extraAttributes([
-                        'style' => 'width:200px'
-                    ])
-                    ->sortable(),
-
-                TextColumn::make('santri.nama_lengkap')
-                    ->label('Santri')
-                    ->searchable(isIndividual: true)
                     ->sortable(),
 
 
 
             ])
             ->filters([
-                //
-            ])
+
+                SelectFilter::make('qism_detail_id')
+                    ->label('Qism')
+                    ->multiple()
+                    ->options(QismDetail::all()->pluck('abbr_qism_detail', 'id')),
+
+                SelectFilter::make('tahun_berjalan_id')
+                    ->label('Tahun Berjalan')
+                    ->multiple()
+                    ->options(TahunBerjalan::all()->pluck('tb', 'id')),
+
+                SelectFilter::make('kelas_id')
+                    ->label('Kelas')
+                    ->multiple()
+                    ->options(Kelas::all()->pluck('kelas', 'id')),
+
+
+            ], layout: FiltersLayout::AboveContent)
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
@@ -186,7 +248,7 @@ class AdminKelasSantriResource extends Resource
                     // ->modalHeading('Simpan data santri tinggal kelas?')
                     // ->modalDescription('Setelah klik tombol "Simpan", maka status akan berubah')
                     // ->modalSubmitActionLabel('Simpan')
-                    ->action(fn (Collection $records, array $data) => $records->each(
+                    ->action(fn(Collection $records, array $data) => $records->each(
                         function ($record) {
 
                             $wsid = Santri::where('id', $record->santri_id)->first();
@@ -224,7 +286,7 @@ class AdminKelasSantriResource extends Resource
                     // ->modalHeading('Simpan data santri tinggal kelas?')
                     // ->modalDescription('Setelah klik tombol "Simpan", maka status akan berubah')
                     // ->modalSubmitActionLabel('Simpan')
-                    ->action(fn (Collection $records, array $data) => $records->each(
+                    ->action(fn(Collection $records, array $data) => $records->each(
                         function ($record) {
 
                             $wsid = Santri::where('id', $record->santri_id)->first();
@@ -253,7 +315,7 @@ class AdminKelasSantriResource extends Resource
                     ))
                     ->deselectRecordsAfterCompletion(),
 
-                    Tables\Actions\DeleteBulkAction::make(),
+                Tables\Actions\DeleteBulkAction::make(),
             ]);
     }
 

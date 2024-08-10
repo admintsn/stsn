@@ -19,6 +19,9 @@ use App\Models\Santri;
 use App\Models\Semester;
 use App\Models\StaffAdmin;
 use App\Models\TahunAjaran;
+use App\Models\TahunAjaranAktif;
+use App\Models\TahunBerjalan;
+use App\Models\TahunBerjalanAktif;
 use Filament\Actions\Action;
 use Filament\Tables\Actions\ReplicateAction;
 use Filament\Forms;
@@ -118,52 +121,51 @@ class DataNilaiResource extends Resource
                         Select::make('qism_id')
                             ->label('Qism')
                             ->options(Qism::all()->pluck('qism', 'id'))
-                            ->native(false),
+                            ->native(false)
+                            ->live()
+                            ->afterStateUpdated(function (Get $get, Set $set, $state) {
+
+                                $ta_aktif = TahunAjaranAktif::where('qism_id', $state)
+                                    ->where('is_active', 1)
+                                    ->first();
+
+                                $tb_aktif = TahunBerjalan::where('is_active', 1)->first();
+
+                                $set('tahun_ajaran_id', $ta_aktif->tahun_ajaran_id);
+                                $set('semester_id', $ta_aktif->semester_id);
+                                $set('tahun_berjalan_id', $tb_aktif->id);
+                            }),
 
                         Select::make('qism_detail_id')
                             ->label('Qism Detail')
-                            ->options(fn (Get $get): Collection => QismDetail::query()
+                            ->options(fn(Get $get): Collection => QismDetail::query()
                                 ->where('qism_id', $get('qism_id'))
                                 ->pluck('abbr_qism_detail', 'id'))
                             ->native(false),
 
                         Select::make('tahun_ajaran_id')
                             ->label('Tahun Ajaran')
-                            ->options(TahunAjaran::all()->pluck('ta', 'id'))
-                            ->native(false)
-                            ->default('5'),
+                            ->options(TahunAjaran::all()->pluck('abbr_ta', 'id'))
+                            ->native(false),
+
+                        Select::make('tahun_berjalan_id')
+                            ->label('Tahun Berjalan')
+                            ->options(TahunBerjalan::all()->pluck('tb', 'id'))
+                            ->native(false),
+                        // ->default('5'),
 
                         Select::make('semester_id')
                             ->label('Semester')
                             ->options(Semester::all()->pluck('semester', 'id'))
-                            ->native(false)
-                            ->default('2'),
+                            ->native(false),
+                        // ->default('2'),
 
                         Select::make('kelas_id')
                             ->label('Kelas')
                             ->options(function (Get $get) {
                                 return (QismDetailHasKelas::where('qism_detail_id', $get('qism_detail_id'))->pluck('kelas', 'kelas_id'));
                             })
-                            ->native(false)
-                            ->live()
-                            ->afterStateUpdated(function (Get $get, Set $set) {
-
-                                $getqismdetail = $get('qism_detail_id');
-
-                                $gettahunajaran = $get('tahun_ajaran_id');
-
-                                $getsemester = $get('semester_id');
-
-                                $getkelas = $get('kelas_id');
-
-                                $santri = KelasSantri::where('qism_detail_id', $getqismdetail)
-                                    ->where('tahun_ajaran_id', $gettahunajaran)
-                                    ->where('semester_id', $getsemester)
-                                    ->where('kelas_id', $getkelas)
-                                    ->count();
-
-                                $set('jumlah_print', $santri);
-                            }),
+                            ->native(false),
 
                         TextInput::make('kelas_internal')
                             ->label('Kelas Internal'),
@@ -187,6 +189,8 @@ class DataNilaiResource extends Resource
                                 $gettahunajaran = TahunAjaran::where('id', $get('tahun_ajaran_id'))->first();
                                 $tahunajaran = $gettahunajaran->abbr_ta;
 
+                                $gettahunberjalan = $get('tahun_berjalan');
+
                                 $getkelas = Kelas::where('id', $get('kelas_id'))->first();
                                 $kelas = $getkelas->abbr_kelas;
 
@@ -204,10 +208,30 @@ class DataNilaiResource extends Resource
                                     $kodesoal = $qismdetail . "-" . $tahunajaran . "-" . $semester . "-" . $kelas . "-" . $mapel;
 
                                     $set('kode_soal', $kodesoal);
+
+                                    $jumlahsantri = KelasSantri::whereHas('statussantri', function ($query) {
+                                        $query->where('status', 'Aktif');
+                                    })
+                                        ->where('qism_detail_id', $get('qism_detail_id'))
+                                        ->where('tahun_berjalan_id', $get('tahun_berjalan_id'))
+                                        ->where('kelas_id', $get('kelas_id'))
+                                        ->count();
+
+                                    $set('jumlah_print', $jumlahsantri);
                                 } elseif ($getkelasinternal !== null) {
                                     $kodesoal = $qismdetail . "-" . $tahunajaran . "-" . $semester . "-" . $getkelasinternal . "-" . $mapel;
 
                                     $set('kode_soal', $kodesoal);
+
+                                    $jumlahsantri = KelasSantri::whereHas('statussantri', function ($query) {
+                                        $query->where('status', 'Aktif');
+                                    })
+                                        ->where('qism_detail_id', $get('qism_detail_id'))
+                                        ->where('tahun_berjalan_id', $get('tahun_berjalan_id'))
+                                        ->where('kelas_internal', $get('kelas_internal'))
+                                        ->count();
+
+                                    $set('jumlah_print', $jumlahsantri);
                                 }
                             }),
 
@@ -234,7 +258,7 @@ class DataNilaiResource extends Resource
 
                                 Select::make('qism_detail_id')
                                     ->label('Qism Detail')
-                                    ->options(fn (Get $get): Collection => QismDetail::query()
+                                    ->options(fn(Get $get): Collection => QismDetail::query()
                                         ->where('qism_id', $get('qism_id'))
                                         ->pluck('abbr_qism_detail', 'id'))
                                     ->native(false),
@@ -297,10 +321,10 @@ class DataNilaiResource extends Resource
                     ->label('Nilai')
                     ->alignCenter(),
 
-                    TextInputColumn::make('soal_siap_print')
+                TextInputColumn::make('soal_siap_print')
                     ->label('Link Soal'),
 
-                    TextInputColumn::make('file_nilai')
+                TextInputColumn::make('file_nilai')
                     ->label('Link Nilai'),
 
                 CheckboxColumn::make('is_nilai_selesai')
@@ -392,59 +416,54 @@ class DataNilaiResource extends Resource
                 SelectFilter::make('jenis_soal_id')
                     ->label('Jenis Soal')
                     ->multiple()
-                    ->options([
-                        '1' => 'Hifdz',
-                        '2' => 'Lainnya',
-                        '3' => 'Rapor TA',
-                        '4' => 'Tulis/Lisan',
-                    ]),
+                    ->options(JenisSoal::all()->pluck('jenis_soal', 'id')),
 
-                Filter::make('is_soal')
-                    ->label('Hanya Soal')
-                    ->query(fn (Builder $query): Builder => $query->where('is_soal', 1)),
-
-                Filter::make('is_nilai')
-                    ->label('Hanya Nilai')
-                    ->query(fn (Builder $query): Builder => $query->where('is_nilai', 1)),
-
-                Filter::make('is_nilai_selesai')
-                    ->label('Nilai Selesai')
-                    ->query(fn (Builder $query): Builder => $query->where('is_nilai_selesai', 1)),
-
-                Filter::make('Nilai Belum Selesai')
-                    ->label('Nilai Belum Selesai')
-                    ->query(fn (Builder $query): Builder => $query->where('is_nilai_selesai', 0)),
-
+                SelectFilter::make('tahun_berjalan_id')
+                    ->label('Tahun Berjalan')
+                    ->multiple()
+                    ->options(TahunBerjalan::all()->pluck('tb', 'id')),
 
                 SelectFilter::make('qism_detail_id')
                     ->label('Qism')
                     ->multiple()
-                    ->options([
-                        '1' => 'TAPa',
-                        '2' => 'TAPi',
-                        '3' => 'PTPa',
-                        '4' => 'PTPi',
-                        '5' => 'TQPa',
-                        '6' => 'TQPi',
-                        '7' => 'IDD',
-                        '8' => 'MTW',
-                        '9' => 'TN',
-                    ]),
+                    ->options(QismDetail::all()->pluck('abbr_qism_detail', 'id')),
 
                 SelectFilter::make('kelas_id')
                     ->label('Kelas')
                     ->multiple()
-                    ->options([
-                        '1' => 'Kelas 1',
-                        '2' => 'Kelas 2',
-                        '3' => 'Kelas 3',
-                        '4' => 'Kelas 4',
-                        '5' => 'Kelas 5',
-                        '6' => 'Kelas 6',
-                        '7' => 'Kelas A',
-                        '8' => 'Kelas B',
-                        '9' => 'Kelas MTW',
-                    ]),
+                    ->options(Kelas::all()->pluck('kelas', 'id')),
+
+                // SelectFilter::make('kelas_internal')
+                //     ->label('Kelas Internal')
+                //     ->multiple()
+                //     ->options(Nilai::all()->pluck('kelas_internal', 'kelas_internal')),
+
+                SelectFilter::make('mapel_id')
+                    ->label('Mapel')
+                    ->multiple()
+                    ->options(Mapel::all()->pluck('mapel', 'id')),
+
+                SelectFilter::make('pengajar_id')
+                    ->label('Pengajar')
+                    ->multiple()
+                    ->options(Pengajar::all()->pluck('nama', 'id')),
+
+                Filter::make('is_soal')
+                    ->label('Hanya Soal')
+                    ->query(fn(Builder $query): Builder => $query->where('is_soal', 1)),
+
+                Filter::make('is_nilai')
+                    ->label('Hanya Nilai')
+                    ->query(fn(Builder $query): Builder => $query->where('is_nilai', 1)),
+
+                Filter::make('is_nilai_selesai')
+                    ->label('Nilai Selesai')
+                    ->query(fn(Builder $query): Builder => $query->where('is_nilai_selesai', 1)),
+
+                Filter::make('Nilai Belum Selesai')
+                    ->label('Nilai Belum Selesai')
+                    ->query(fn(Builder $query): Builder => $query->where('is_nilai_selesai', 0)),
+
 
             ], layout: FiltersLayout::AboveContent)
             ->actions([
@@ -464,7 +483,7 @@ class DataNilaiResource extends Resource
                     // ->modalHeading('Tandai Data sebagai Soal?')
                     // ->modalDescription('Setelah klik tombol "Simpan", maka status akan berubah')
                     // ->modalSubmitActionLabel('Simpan')
-                    ->action(fn (Collection $records, array $data) => $records->each(
+                    ->action(fn(Collection $records, array $data) => $records->each(
                         function ($record) {
 
                             $data['is_soal'] = 1;
@@ -491,7 +510,7 @@ class DataNilaiResource extends Resource
                     // ->modalHeading(new HtmlString('Reset tanda Soal?'))
                     // ->modalDescription('Setelah klik tombol "Simpan", maka status akan berubah')
                     // ->modalSubmitActionLabel('Simpan')
-                    ->action(fn (Collection $records, array $data) => $records->each(
+                    ->action(fn(Collection $records, array $data) => $records->each(
                         function ($record) {
 
                             $data['is_soal'] = 0;
@@ -517,7 +536,7 @@ class DataNilaiResource extends Resource
                     // ->modalHeading('Tandai Data sebagai Nilai?')
                     // ->modalDescription('Setelah klik tombol "Simpan", maka status akan berubah')
                     // ->modalSubmitActionLabel('Simpan')
-                    ->action(fn (Collection $records, array $data) => $records->each(
+                    ->action(fn(Collection $records, array $data) => $records->each(
                         function ($record) {
 
                             $data['is_nilai'] = 1;
@@ -544,7 +563,7 @@ class DataNilaiResource extends Resource
                     // ->modalHeading(new HtmlString('Reset tanda Nilai?'))
                     // ->modalDescription('Setelah klik tombol "Simpan", maka status akan berubah')
                     // ->modalSubmitActionLabel('Simpan')
-                    ->action(fn (Collection $records, array $data) => $records->each(
+                    ->action(fn(Collection $records, array $data) => $records->each(
                         function ($record) {
 
                             $data['is_nilai'] = 0;
@@ -570,7 +589,7 @@ class DataNilaiResource extends Resource
                     // ->modalHeading('Tandai Data sebagai Soal?')
                     // ->modalDescription('Setelah klik tombol "Simpan", maka status akan berubah')
                     // ->modalSubmitActionLabel('Simpan')
-                    ->action(fn (Collection $records, array $data) => $records->each(
+                    ->action(fn(Collection $records, array $data) => $records->each(
                         function ($record) {
 
                             $data['is_soal'] = 1;
@@ -598,7 +617,7 @@ class DataNilaiResource extends Resource
                     // ->modalHeading(new HtmlString('Reset tanda Soal?'))
                     // ->modalDescription('Setelah klik tombol "Simpan", maka status akan berubah')
                     // ->modalSubmitActionLabel('Simpan')
-                    ->action(fn (Collection $records, array $data) => $records->each(
+                    ->action(fn(Collection $records, array $data) => $records->each(
                         function ($record) {
 
                             $data['is_soal'] = 0;

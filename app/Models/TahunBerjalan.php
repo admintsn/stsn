@@ -9,9 +9,9 @@ class TahunBerjalan extends Model
 {
     use HasFactory;
 
-    public function kelassantri()
+    public function kelasSantris()
     {
-        return $this->belongsTo(KelasSantri::class);
+        return $this->hasMany(KelasSantri::class);
     }
 
     public function pesandaftar()

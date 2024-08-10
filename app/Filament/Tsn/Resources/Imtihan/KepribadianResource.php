@@ -6,6 +6,7 @@ use App\Filament\Tsn\Resources\Imtihan\KepribadianResource\Pages;
 use App\Filament\Tsn\Resources\Imtihan\KepribadianResource\RelationManagers;
 use App\Models\Kepribadian;
 use App\Models\Nilai;
+use App\Models\TahunBerjalan;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -204,14 +205,15 @@ class KepribadianResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
+        $tahunberjalan = TahunBerjalan::where('is_active', 1)->first();
 
         if (Auth::user()->id === 1 or Auth::user()->id === 2) {
-            return parent::getEloquentQuery()->where('jenis_soal_id', 2)->where('is_nilai', 1);
+            return parent::getEloquentQuery()->where('jenis_soal_id', 2)->where('is_nilai', 1)->where('tahun_berjalan_id', $tahunberjalan->id);
         } else {
 
             return parent::getEloquentQuery()->whereHas('pengajar', function ($query) {
                 $query->where('user_id', Auth::user()->id);
-            })->where('jenis_soal_id', 2)->where('is_nilai', 1);
+            })->where('jenis_soal_id', 2)->where('is_nilai', 1)->where('tahun_berjalan_id', $tahunberjalan->id);
         }
     }
 }

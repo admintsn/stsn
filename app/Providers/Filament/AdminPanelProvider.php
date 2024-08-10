@@ -11,9 +11,12 @@ use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages;
 use App\Filament\Auth\Login;
+use Filament\Notifications\Livewire\Notifications;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Alignment;
+use Filament\Support\Enums\VerticalAlignment;
 use Filament\Support\Facades\FilamentView;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -72,6 +75,10 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
+            ->bootUsing(function () {
+                Notifications::alignment(Alignment::Center);
+                Notifications::verticalAlignment(VerticalAlignment::Center);
+            })
             ->unsavedChangesAlerts()
             ->defaultThemeMode(ThemeMode::Light)
             ->topNavigation()

@@ -10,6 +10,7 @@ use App\Models\MenuMudir;
 use App\Models\Nilai;
 use App\Models\Pengajar;
 use App\Models\QismDetail;
+use App\Models\TahunBerjalan;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -70,7 +71,7 @@ class MenuMudirResource extends Resource
 
                 TextColumn::make('file_nilai')
                     ->label('Link')
-                    ->formatStateUsing(fn (string $state): string => __("Cek"))
+                    ->formatStateUsing(fn(string $state): string => __("Cek"))
                     ->icon('heroicon-s-pencil-square')
                     ->iconColor('success')
                     // ->circular()
@@ -147,12 +148,12 @@ class MenuMudirResource extends Resource
 
                 Filter::make('is_nilai_selesai')
                     ->label('Nilai Selesai')
-                    ->query(fn (Builder $query): Builder => $query->where('is_nilai_selesai', 1))
+                    ->query(fn(Builder $query): Builder => $query->where('is_nilai_selesai', 1))
                     ->visible(auth()->user()->id === 1 || auth()->user()->id === 2),
 
                 Filter::make('Nilai Belum Selesai')
                     ->label('Nilai Belum Selesai')
-                    ->query(fn (Builder $query): Builder => $query->where('is_nilai_selesai', 0))
+                    ->query(fn(Builder $query): Builder => $query->where('is_nilai_selesai', 0))
                     ->visible(auth()->user()->id === 1 || auth()->user()->id === 2),
 
             ], layout: FiltersLayout::AboveContent)
@@ -186,7 +187,8 @@ class MenuMudirResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
+        $tahunberjalan = TahunBerjalan::where('is_active', 1)->first();
 
-        return parent::getEloquentQuery()->whereIn('qism_id', Auth::user()->mudirqism)->where('is_nilai', 1);
+        return parent::getEloquentQuery()->whereIn('qism_id', Auth::user()->mudirqism)->where('is_nilai', 1)->where('tahun_berjalan_id', $tahunberjalan->id);
     }
 }

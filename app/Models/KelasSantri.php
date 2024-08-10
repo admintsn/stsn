@@ -49,9 +49,9 @@ class KelasSantri extends Model
         return $this->belongsTo(Santri::class);
     }
 
-    public function tahunberjalan()
+    public function tahun_berjalan()
     {
-        return $this->hasOne(TahunBerjalan::class);
+        return $this->belongsTo(TahunBerjalan::class);
     }
 
     public function statusSantris()
@@ -63,7 +63,7 @@ class KelasSantri extends Model
     {
         return $this->hasOne(StatusSantri::class, 'santri_id', 'santri_id');
     }
-    
+
     public function user()
     {
         return $this->hasOne(User::class, 'username', 'kartu_keluarga');
