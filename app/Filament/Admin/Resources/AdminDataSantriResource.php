@@ -2527,6 +2527,11 @@ class AdminDataSantriResource extends Resource
                     ->searchable(isIndividual: true, isGlobal: false)
                     ->sortable(),
 
+                TextColumn::make('kelas_internal')
+                    ->label('Kelas Internal')
+                    ->searchable(isIndividual: true, isGlobal: false)
+                    ->sortable(),
+
                 TextColumn::make('santri.nama_lengkap')
                     ->label('Nama')
                     ->searchable(isIndividual: true, isGlobal: false)
@@ -3499,6 +3504,12 @@ class AdminDataSantriResource extends Resource
                     ->label('Qism')
                     ->multiple()
                     ->options(QismDetail::all()->pluck('abbr_qism_detail', 'id')),
+
+                SelectFilter::make('kelas_id')
+                    ->label('Kelas')
+                    ->multiple()
+                    ->options(Kelas::all()->pluck('kelas', 'id')),
+
 
             ], layout: FiltersLayout::AboveContent)
             ->actions([

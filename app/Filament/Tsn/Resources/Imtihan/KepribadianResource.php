@@ -106,7 +106,7 @@ class KepribadianResource extends Resource
 
                 TextColumn::make('file_nilai')
                     ->label('Link')
-                    ->formatStateUsing(fn (string $state): string => __("Input"))
+                    ->formatStateUsing(fn(string $state): string => __("Input"))
                     ->icon('heroicon-s-pencil-square')
                     ->iconColor('success')
                     // ->circular()
@@ -131,6 +131,10 @@ class KepribadianResource extends Resource
                     ->sortable(),
 
                 TextColumn::make('kelas.kelas')
+                    ->label('Kelas')
+                    ->sortable(),
+
+                TextColumn::make('kelas_internal')
                     ->label('Kelas')
                     ->sortable(),
 
@@ -167,12 +171,12 @@ class KepribadianResource extends Resource
 
                 Filter::make('is_nilai_selesai')
                     ->label('Nilai Selesai')
-                    ->query(fn (Builder $query): Builder => $query->where('is_nilai_selesai', 1))
+                    ->query(fn(Builder $query): Builder => $query->where('is_nilai_selesai', 1))
                     ->hidden(auth()->user()->id !== 1 || auth()->user()->id !== 2),
 
                 Filter::make('Nilai Belum Selesai')
                     ->label('Nilai Belum Selesai')
-                    ->query(fn (Builder $query): Builder => $query->where('is_nilai_selesai', 0))
+                    ->query(fn(Builder $query): Builder => $query->where('is_nilai_selesai', 0))
                     ->hidden(auth()->user()->id !== 1 || auth()->user()->id !== 2),
 
             ], layout: FiltersLayout::AboveContent)

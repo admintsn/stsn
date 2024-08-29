@@ -38,6 +38,11 @@ class Nilai extends Model
         return $this->belongsTo(TahunAjaran::class);
     }
 
+    public function tahunBerjalan()
+    {
+        return $this->belongsTo(TahunBerjalan::class);
+    }
+
     public function semester()
     {
         return $this->belongsTo(Semester::class);

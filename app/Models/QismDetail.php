@@ -18,4 +18,9 @@ class QismDetail extends Model
     {
         return $this->belongsTo(Qism::class);
     }
+
+    public function nilais()
+    {
+        return $this->hasMany(Nilai::class);
+    }
 }

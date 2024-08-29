@@ -232,21 +232,24 @@ class KelasSantriExporter extends Exporter
 
             ExportColumn::make('santri.al_s_waktu_tempuh')
                 ->label('Waktu Tempuh'),
-                
-                ExportColumn::make('qism.kode_qism')
-                    ->label('Kode Qism'),
 
-                ExportColumn::make('qism_detail.kode_qism_detail')
-                    ->label('Kode Qism Detail'),
+            ExportColumn::make('qism.kode_qism')
+                ->label('Kode Qism'),
 
-                ExportColumn::make('kelas.id')
-                    ->label('Kode Kelas'),
+            ExportColumn::make('qism_detail.kode_qism_detail')
+                ->label('Kode Qism Detail'),
+
+            ExportColumn::make('kelas.id')
+                ->label('Kode Kelas'),
 
             ExportColumn::make('qism_detail.abbr_qism_detail')
                 ->label('Qism'),
 
             ExportColumn::make('kelas.kelas')
                 ->label('Kelas'),
+
+            ExportColumn::make('kelas_internal')
+                ->label('Kelas Internal'),
 
 
 
